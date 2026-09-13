@@ -20,91 +20,87 @@ body {
   align-items: center;
 }
 
-/* MAIN CONTAINER */
-
 .game-container {
   width: 100%;
-  max-width: 500px;
-  height: 100vh;
-  max-height: 950px;
-  padding: 10px;
+  max-width: 520px;
+  height: 100dvh;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
-
 
 /* HEADER */
 
 .top-bar {
+  height: 48px;
+  min-height: 48px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 5px 8px;
+  justify-content: space-between;
+  padding: 3px 8px;
 }
 
 .game-title h1 {
-  font-size: 20px;
+  font-size: clamp(16px, 4.5vw, 22px);
   letter-spacing: 2px;
+  white-space: nowrap;
 }
 
 .game-title span {
   display: block;
-  margin-top: 3px;
-  font-size: 10px;
-  color: #7dd3fc;
+  margin-top: 2px;
+  color: #67e8f9;
+  font-size: 9px;
   letter-spacing: 3px;
 }
 
 .pause-btn {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid #34517d;
   border-radius: 12px;
-  border: 1px solid #334155;
-  background: #111827;
+  background: #101b31;
   color: white;
   font-size: 20px;
-  cursor: pointer;
 }
-
 
 /* HUD */
 
 .hud {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 .hud-box {
-  min-height: 62px;
-  padding: 6px 3px;
-  text-align: center;
+  height: 58px;
+  border: 1px solid #29446d;
   border-radius: 12px;
-  border: 1px solid #263b62;
-  background: linear-gradient(145deg, #101a30, #080e1d);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(145deg, #101c34, #080e1d);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .hud-box span {
-  display: block;
-  font-size: 17px;
+  font-size: 15px;
+  line-height: 15px;
 }
 
 .hud-box strong {
-  display: block;
-  margin-top: 2px;
-  font-size: 17px;
-  color: #67e8f9;
+  color: #58e7ff;
+  font-size: 16px;
+  line-height: 18px;
 }
 
 .hud-box small {
-  display: block;
-  margin-top: 1px;
-  font-size: 8px;
-  color: #7c8ba5;
+  color: #7e8da7;
+  font-size: 7px;
 }
-
 
 /* GAME */
 
@@ -112,39 +108,39 @@ body {
   position: relative;
   flex: 1;
   min-height: 0;
+  width: 100%;
   overflow: hidden;
-  border-radius: 22px;
-  border: 2px solid #263d65;
+  border: 2px solid #29466f;
+  border-radius: 20px;
   background: #111827;
-  box-shadow:
-    0 0 20px rgba(34, 211, 238, 0.12),
-    0 15px 40px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 25px rgba(0, 180, 255, .12);
 }
-
 
 /* SKY */
 
 .sky {
   position: absolute;
-  inset: 0 0 55% 0;
-  overflow: hidden;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 52%;
   background: linear-gradient(
     to bottom,
-    #071126,
-    #122a4b,
-    #1e4162
+    #071126 0%,
+    #12345a 65%,
+    #1c4965 100%
   );
 }
 
 .moon {
   position: absolute;
-  width: 48px;
-  height: 48px;
+  width: 43px;
+  height: 43px;
+  top: 9%;
   right: 13%;
-  top: 12%;
   border-radius: 50%;
-  background: #e8f5ff;
-  box-shadow: 0 0 25px #a5d8ff;
+  background: #eef8ff;
+  box-shadow: 0 0 25px #9bdcff;
 }
 
 .star {
@@ -157,72 +153,67 @@ body {
 }
 
 .star1 {
-  left: 10%;
-  top: 20%;
+  left: 12%;
+  top: 17%;
 }
 
 .star2 {
-  left: 25%;
-  top: 10%;
+  left: 29%;
+  top: 9%;
 }
 
 .star3 {
-  left: 42%;
-  top: 25%;
+  left: 44%;
+  top: 22%;
 }
 
 .star4 {
-  left: 65%;
-  top: 12%;
+  left: 67%;
+  top: 14%;
 }
 
 .star5 {
-  left: 80%;
+  left: 83%;
   top: 28%;
 }
-
 
 /* ROAD */
 
 .road {
   position: absolute;
-  left: 12%;
-  right: 12%;
+  z-index: 2;
+  left: 11%;
+  right: 11%;
   top: 0;
   bottom: 0;
+
   overflow: hidden;
-  background:
-    linear-gradient(
-      90deg,
-      #171923,
-      #292c38 12%,
-      #22252f 50%,
-      #292c38 88%,
-      #171923
-    );
 
-  border-left: 7px solid #e5e7eb;
-  border-right: 7px solid #e5e7eb;
+  background: #252934;
+
+  border-left: 6px solid #f1f5f9;
+  border-right: 6px solid #f1f5f9;
 }
-
 
 /* ROAD LINES */
 
 .road-line {
   position: absolute;
+  z-index: 3;
   top: -120px;
   bottom: -120px;
+
   width: 5px;
 
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255,255,255,0.95) 0px,
-    rgba(255,255,255,0.95) 55px,
-    transparent 55px,
-    transparent 110px
+    #ffffff 0px,
+    #ffffff 60px,
+    transparent 60px,
+    transparent 120px
   );
 
-  animation: roadMove 0.6s linear infinite;
+  animation: roadMove .55s linear infinite;
 }
 
 .line1 {
@@ -239,41 +230,11 @@ body {
   }
 
   to {
-    transform: translateY(110px);
+    transform: translateY(120px);
   }
 }
 
-
-/* PLAYER CAR */
-
-.player-car {
-  position: absolute;
-  z-index: 10;
-
-  bottom: 7%;
-  left: 50%;
-
-  width: 65px;
-  height: 75px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  font-size: 48px;
-
-  transform: translateX(-50%);
-
-  user-select: none;
-  pointer-events: none;
-
-  filter:
-    drop-shadow(0 8px 5px rgba(0,0,0,0.65))
-    drop-shadow(0 0 10px rgba(34,211,238,0.25));
-}
-
-
-/* GAME OBJECTS */
+/* OBJECT LAYER */
 
 #objects {
   position: absolute;
@@ -281,21 +242,52 @@ body {
   z-index: 8;
 }
 
-.car {
-  position: absolute;
+/* PLAYER */
 
-  width: 62px;
-  height: 72px;
+.player-car {
+  position: absolute;
+  z-index: 15;
+
+  bottom: 7%;
+
+  width: 64px;
+  height: 74px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  user-select: none;
+  font-size: 46px;
+
+  transform: translateX(-50%);
+
   pointer-events: none;
+  user-select: none;
+
+  filter:
+    drop-shadow(0 7px 5px rgba(0,0,0,.7))
+    drop-shadow(0 0 10px rgba(0,200,255,.3));
+
+  transition: left .05s linear;
+}
+
+/* TRAFFIC */
+
+.car {
+  position: absolute;
+
+  width: 60px;
+  height: 70px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: none;
+  user-select: none;
 
   filter: drop-shadow(
-    0 7px 5px rgba(0,0,0,0.7)
+    0 7px 5px rgba(0,0,0,.7)
   );
 }
 
@@ -308,9 +300,9 @@ body {
 
   filter:
     drop-shadow(0 0 6px #ffd43b)
-    drop-shadow(0 0 12px rgba(255,212,59,0.6));
+    drop-shadow(0 0 14px rgba(255,212,59,.7));
 
-  animation: coinSpin 0.8s linear infinite;
+  animation: coinSpin .7s linear infinite;
 }
 
 @keyframes coinSpin {
@@ -319,7 +311,7 @@ body {
   }
 
   50% {
-    transform: scaleX(0.35);
+    transform: scaleX(.35);
   }
 
   100% {
@@ -327,64 +319,59 @@ body {
   }
 }
 
-
 /* SCREENS */
 
 .screen {
   position: absolute;
+  z-index: 50;
   inset: 0;
 
-  z-index: 30;
-
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
-  background: rgba(2, 6, 23, 0.76);
+  background: rgba(2,6,23,.78);
 
-  backdrop-filter: blur(7px);
+  backdrop-filter: blur(6px);
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
-
-/* MENU CARD */
+/* CARD */
 
 .menu-card {
   width: 84%;
+  max-width: 350px;
 
-  padding: 28px 20px;
+  padding: 25px 18px;
 
   text-align: center;
 
-  border-radius: 24px;
+  border: 1px solid #38557f;
+  border-radius: 23px;
 
-  border: 1px solid #39537e;
-
-  background:
-    linear-gradient(
-      145deg,
-      #101b31,
-      #080d1b
-    );
+  background: linear-gradient(
+    145deg,
+    #101c32,
+    #070d1b
+  );
 
   box-shadow:
-    0 20px 60px rgba(0,0,0,0.7),
-    0 0 30px rgba(59,130,246,0.12);
+    0 20px 60px rgba(0,0,0,.75);
 }
 
 .big-logo {
-  font-size: 65px;
-
+  font-size: 58px;
   margin-bottom: 5px;
 
-  animation: carFloat 1.8s ease-in-out infinite;
+  animation: floatingCar 1.5s ease-in-out infinite;
 }
 
-@keyframes carFloat {
-  0%,100% {
+@keyframes floatingCar {
+  0%,
+  100% {
     transform: translateY(0);
   }
 
@@ -394,157 +381,162 @@ body {
 }
 
 .menu-card h2 {
-  font-size: 28px;
+  margin: 5px 0 10px;
+
+  font-size: 26px;
+
   letter-spacing: 2px;
-  margin: 5px 0 12px;
 }
 
 .menu-card p {
-  color: #aab8d0;
+  color: #a9b7ce;
+  font-size: 13px;
   line-height: 1.7;
-  font-size: 14px;
 }
 
-
-/* PLAY BUTTON */
+/* PLAY */
 
 .play-btn {
-  margin-top: 18px;
+  min-width: 185px;
 
-  min-width: 190px;
-
-  padding: 14px 25px;
+  margin-top: 16px;
+  padding: 13px 22px;
 
   border: none;
-  border-radius: 14px;
+  border-radius: 13px;
 
   color: white;
 
   font-size: 15px;
   font-weight: bold;
 
-  background:
-    linear-gradient(
-      135deg,
-      #06b6d4,
-      #4f46e5
-    );
+  background: linear-gradient(
+    135deg,
+    #06b6d4,
+    #4f46e5
+  );
 
   box-shadow:
-    0 8px 25px rgba(37,99,235,0.35);
+    0 8px 25px rgba(37,99,235,.35);
 
   cursor: pointer;
-
-  transition: 0.2s;
 }
 
 .play-btn:active {
-  transform: scale(0.95);
+  transform: scale(.95);
 }
-
 
 /* CONTROLS */
 
 .controls {
-  display: grid;
+  width: 100%;
 
+  display: grid;
   grid-template-columns: 1fr 1fr 1fr;
 
-  gap: 10px;
+  gap: 8px;
 }
 
 .control-btn,
 .boost-btn {
-  height: 58px;
+  height: 56px;
 
-  border-radius: 16px;
+  border: 1px solid #2b456d;
+  border-radius: 15px;
 
-  border: 1px solid #293e64;
-
-  background:
-    linear-gradient(
-      145deg,
-      #121e35,
-      #0a1120
-    );
+  background: linear-gradient(
+    145deg,
+    #122039,
+    #090f1d
+  );
 
   color: white;
 
-  font-size: 25px;
+  font-size: 24px;
 
   touch-action: none;
 
-  cursor: pointer;
-
-  box-shadow:
-    0 6px 15px rgba(0,0,0,0.35);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .control-btn:active,
 .boost-btn:active {
-  transform: scale(0.94);
+  transform: scale(.94);
+  background: #172b4b;
 }
 
 .boost-btn {
   color: #ffe066;
-  font-size: 21px;
+  font-size: 19px;
 }
 
 .boost-btn span {
   display: block;
-  margin-top: -2px;
   font-size: 8px;
   letter-spacing: 2px;
 }
 
-
 /* INSTRUCTIONS */
 
 .instructions {
+  height: 18px;
   text-align: center;
 
-  color: #7485a3;
+  color: #71829e;
 
-  font-size: 10px;
-
-  padding-bottom: 2px;
+  font-size: 9px;
 }
 
-
-/* MOBILE */
+/* SMALL MOBILE */
 
 @media (max-width: 380px) {
 
   .game-container {
-    padding: 7px;
-    gap: 6px;
+    padding: 5px;
+    gap: 5px;
   }
 
-  .game-title h1 {
-    font-size: 17px;
+  .top-bar {
+    height: 43px;
+    min-height: 43px;
   }
 
   .hud-box {
-    min-height: 55px;
-  }
-
-  .hud-box strong {
-    font-size: 15px;
-  }
-
-  .controls button {
     height: 52px;
   }
 
+  .controls button {
+    height: 50px;
+  }
+
+  .instructions {
+    display: none;
+  }
 }
 
+/* LANDSCAPE MOBILE */
 
-/* DESKTOP */
-
-@media (min-width: 600px) {
+@media (max-height: 520px) {
 
   .game-container {
-    height: 96vh;
+    padding: 5px;
+    gap: 4px;
   }
 
+  .top-bar {
+    height: 38px;
+    min-height: 38px;
   }
+
+  .hud-box {
+    height: 44px;
+  }
+
+  .controls button {
+    height: 45px;
+  }
+
+  .instructions {
+    display: none;
+  }
+}
