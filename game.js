@@ -20,13 +20,8 @@ const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 const boostBtn = document.getElementById("boostBtn");
 
-
-/* =========================
-   GAME VARIABLES
-========================= */
-
-let gameRunning = false;
-let gamePaused = false;
+let running = false;
+let paused = false;
 
 let score = 0;
 let coins = 0;
@@ -34,13 +29,13 @@ let lives = 3;
 
 let playerX = 50;
 
-let speed = 3.2;
+let speed = 3;
 let boost = false;
 
 let spawnTimer = 0;
 let lastTime = 0;
 
-let animationFrame;
+let invincibleUntil = 0;
 
 const keys = {
   left: false,
@@ -49,20 +44,22 @@ const keys = {
 
 
 /* =========================
-   ENEMY CARS
+   CREATE PLAYER CAR
 ========================= */
 
-const enemyCars = [
-  "🚗",
-  "🚙",
-  "🚕",
-  "🚓",
-  "🚐"
-];
+player.innerHTML = `
+  <div class="racing-car">
+    <div class="car-window"></div>
+    <div class="car-light left-light"></div>
+    <div class="car-light right-light"></div>
+    <div class="wheel left-wheel"></div>
+    <div class="wheel right-wheel"></div>
+  </div>
+`;
 
 
 /* =========================
-   RESET GAME
+   RESET
 ========================= */
 
 function resetGame() {
@@ -73,22 +70,23 @@ function resetGame() {
 
   playerX = 50;
 
-  speed = 3.2;
-
-  spawnTimer = 0;
-
+  speed = 3;
   boost = false;
+
+  spawnTimer = 25;
+  invincibleUntil = 0;
 
   objects.innerHTML = "";
 
   player.style.left = playerX + "%";
+  player.style.opacity = "1";
 
   updateHUD();
 }
 
 
 /* =========================
-   UPDATE HUD
+   HUD
 ========================= */
 
 function updateHUD() {
@@ -100,35 +98,34 @@ function updateHUD() {
   livesEl.textContent = lives;
 
   speedEl.textContent =
-    Math.max(1, Math.floor(speed / 3.2));
+    Math.max(1, Math.floor(speed / 3));
 }
 
 
 /* =========================
-   START GAME
+   START
 ========================= */
 
 function startGame() {
 
-  cancelAnimationFrame(animationFrame);
+  cancelAnimationFrame(lastFrame);
 
   resetGame();
 
-  gameRunning = true;
-
-  gamePaused = false;
+  running = true;
+  paused = false;
 
   startScreen.classList.add("hidden");
-
   pauseScreen.classList.add("hidden");
-
   gameOverScreen.classList.add("hidden");
 
   lastTime = performance.now();
 
-  animationFrame =
+  lastFrame =
     requestAnimationFrame(gameLoop);
 }
+
+let lastFrame;
 
 
 /* =========================
@@ -137,7 +134,7 @@ function startGame() {
 
 function gameOver() {
 
-  gameRunning = false;
+  running = false;
 
   boost = false;
 
@@ -152,85 +149,197 @@ function gameOver() {
 
 
 /* =========================
-   SPAWN OBJECT
+   SPAWN TRAFFIC
 ========================= */
 
-function spawnObject(type) {
+function spawnTraffic() {
 
-  const element = document.createElement("div");
+  const car = document.createElement("div");
 
-  if (type === "coin") {
+  car.className = "traffic-car";
 
-    element.className = "car coin";
+  const colors = [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ];
 
-    element.textContent = "🪙";
+  const color =
+    colors[Math.floor(Math.random() * colors.length)];
 
-  } else {
+  car.classList.add(color);
 
-    element.className = "car enemy";
-
-    const randomCar =
-      enemyCars[
-        Math.floor(Math.random() * enemyCars.length)
-      ];
-
-    element.textContent = randomCar;
-  }
-
+  car.innerHTML = `
+    <div class="traffic-window"></div>
+    <div class="traffic-wheel left-wheel"></div>
+    <div class="traffic-wheel right-wheel"></div>
+  `;
 
   /*
-    THREE ROAD LANES
+    3 lanes
   */
 
   const lane =
     Math.floor(Math.random() * 3);
 
+  const lanePositions = [28, 50, 72];
 
-  /*
-    Road is approximately
-    12% to 88% of screen.
-  */
+  const x = lanePositions[lane];
 
-  const lanePosition =
-    12 + (lane + 0.5) * (76 / 3);
+  car.style.left = x + "%";
+  car.style.top = "-90px";
 
+  car.dataset.x = x;
+  car.dataset.y = -90;
 
-  element.style.left =
-    (lanePosition - 4) + "%";
+  car.dataset.type = "traffic";
 
-
-  element.style.top =
-    "-90px";
-
-
-  element.dataset.y = "-90";
-
-  element.dataset.type = type;
-
-
-  objects.appendChild(element);
+  objects.appendChild(car);
 }
 
 
 /* =========================
-   COLLISION
+   SPAWN COIN
 ========================= */
 
-function checkCollision(element1, element2) {
+function spawnCoin() {
 
-  const rect1 =
-    element1.getBoundingClientRect();
+  const coin = document.createElement("div");
 
-  const rect2 =
-    element2.getBoundingClientRect();
+  coin.className = "game-coin";
 
+  coin.textContent = "★";
+
+  const lane =
+    Math.floor(Math.random() * 3);
+
+  const lanePositions = [28, 50, 72];
+
+  const x = lanePositions[lane];
+
+  coin.style.left = x + "%";
+  coin.style.top = "-50px";
+
+  coin.dataset.x = x;
+  coin.dataset.y = -50;
+
+  coin.dataset.type = "coin";
+
+  objects.appendChild(coin);
+}
+
+
+/* =========================
+   REAL COLLISION
+========================= */
+
+function isColliding(obj) {
+
+  const gameWidth = game.clientWidth;
+  const gameHeight = game.clientHeight;
+
+  const playerWidth = 54;
+  const playerHeight = 70;
+
+  const playerLeft =
+    (playerX / 100) * gameWidth -
+    playerWidth / 2;
+
+  const playerTop =
+    gameHeight * 0.86;
+
+  const objectX =
+    (parseFloat(obj.dataset.x) / 100) *
+    gameWidth;
+
+  const objectY =
+    parseFloat(obj.dataset.y);
+
+  const objectWidth = 48;
+  const objectHeight = 62;
+
+  const objectLeft =
+    objectX -
+    objectWidth / 2;
+
+  /*
+    Simple rectangle collision
+  */
 
   return (
-    rect1.left < rect2.right - 8 &&
-    rect1.right > rect2.left + 8 &&
-    rect1.top < rect2.bottom - 8 &&
-    rect1.bottom > rect2.top + 8
+    playerLeft <
+      objectLeft + objectWidth - 8 &&
+
+    playerLeft + playerWidth >
+      objectLeft + 8 &&
+
+    playerTop <
+      objectY + objectHeight - 8 &&
+
+    playerTop + playerHeight >
+      objectY + 8
   );
+}
+
+
+/* =========================
+   PLAYER HIT
+========================= */
+
+function playerHit() {
+
+  const now = performance.now();
+
+  /*
+    Prevent instant repeated hits
+  */
+
+  if (now < invincibleUntil) {
+    return;
+  }
+
+  lives--;
+
+  invincibleUntil =
+    now + 1000;
+
+  /*
+    Blink effect
+  */
+
+  player.style.opacity = "0.35";
+
+  setTimeout(() => {
+
+    if (running) {
+      player.style.opacity = "1";
+    }
+
+  }, 180);
+
+  setTimeout(() => {
+
+    if (running) {
+      player.style.opacity = "0.35";
+    }
+
+  }, 360);
+
+  setTimeout(() => {
+
+    if (running) {
+      player.style.opacity = "1";
+    }
+
+  }, 540);
+
+  updateHUD();
+
+  if (lives <= 0) {
+
+    gameOver();
+  }
 }
 
 
@@ -238,86 +347,69 @@ function checkCollision(element1, element2) {
    GAME LOOP
 ========================= */
 
-function gameLoop(currentTime) {
+function gameLoop(time) {
 
-  if (!gameRunning) {
+  if (!running) {
     return;
   }
 
+  if (paused) {
 
-  if (gamePaused) {
+    lastTime = time;
 
-    lastTime = currentTime;
-
-    animationFrame =
+    lastFrame =
       requestAnimationFrame(gameLoop);
 
     return;
   }
 
-
-  /*
-    Delta time
-  */
-
   let delta =
-    (currentTime - lastTime) / 16.67;
-
+    (time - lastTime) / 16.67;
 
   delta =
     Math.min(delta, 2);
 
+  lastTime = time;
 
-  lastTime = currentTime;
 
-
-  /* =====================
-     SCORE
-  ===================== */
+  /* SCORE */
 
   score +=
-    0.12 *
+    0.10 *
     delta *
     (boost ? 1.5 : 1);
 
 
-  /* =====================
-     SPEED
-  ===================== */
+  /* SPEED */
 
   speed +=
-    0.0015 * delta;
-
+    0.001 *
+    delta;
 
   speed =
-    Math.min(speed, 8);
+    Math.min(speed, 7);
 
 
   const currentSpeed =
     boost
-      ? speed * 1.65
+      ? speed * 1.6
       : speed;
 
 
-  /* =====================
-     PLAYER MOVEMENT
-  ===================== */
+  /* PLAYER */
 
   if (keys.left) {
 
     playerX -=
-      0.9 *
-      delta *
-      (boost ? 1.25 : 1);
+      1.0 *
+      delta;
   }
-
 
   if (keys.right) {
 
     playerX +=
-      0.9 *
-      delta *
-      (boost ? 1.25 : 1);
+      1.0 *
+      delta;
   }
 
 
@@ -327,136 +419,91 @@ function gameLoop(currentTime) {
 
   playerX =
     Math.max(
-      18,
-      Math.min(82, playerX)
+      19,
+      Math.min(81, playerX)
     );
-
 
   player.style.left =
     playerX + "%";
 
 
-  /* =====================
-     SPAWN TRAFFIC
-  ===================== */
+  /* SPAWN */
 
   spawnTimer -= delta;
 
-
   if (spawnTimer <= 0) {
 
-    const type =
-      Math.random() < 0.72
-        ? "enemy"
-        : "coin";
+    /*
+      Traffic is more common
+    */
 
+    if (Math.random() < 0.82) {
 
-    spawnObject(type);
+      spawnTraffic();
 
+    } else {
+
+      spawnCoin();
+    }
 
     spawnTimer =
-      Math.max(18, 42 - speed * 2)
-      + Math.random() * 20;
+      Math.max(
+        32,
+        55 - speed * 3
+      );
   }
 
 
-  /* =====================
-     MOVE OBJECTS
-  ===================== */
+  /* MOVE OBJECTS */
 
-  const allObjects =
-    [...objects.children];
-
-
-  allObjects.forEach(element => {
+  [...objects.children].forEach(obj => {
 
     let y =
-      parseFloat(element.dataset.y);
-
+      parseFloat(obj.dataset.y);
 
     y +=
       currentSpeed *
       delta;
 
+    obj.dataset.y = y;
 
-    element.dataset.y =
-      y;
-
-
-    element.style.top =
+    obj.style.top =
       y + "px";
 
 
-    /* ===================
-       COLLISION
-    =================== */
+    /* COLLISION */
 
-    if (
-      checkCollision(
-        player,
-        element
-      )
-    ) {
-
-      /*
-        COIN
-      */
+    if (isColliding(obj)) {
 
       if (
-        element.dataset.type === "coin"
+        obj.dataset.type === "coin"
       ) {
 
-        coins += 1;
+        coins++;
 
         score += 10;
 
-        element.remove();
+        obj.remove();
 
+        return;
       }
 
 
-      /*
-        ENEMY
-      */
+      if (
+        obj.dataset.type === "traffic"
+      ) {
 
-      else {
+        playerHit();
 
-        lives -= 1;
+        obj.remove();
 
-        element.remove();
-
-
-        /*
-          Small hit effect
-        */
-
-        player.style.transform =
-          "translateX(-50%) scale(1.2)";
-
-
-        setTimeout(() => {
-
-          player.style.transform =
-            "translateX(-50%) scale(1)";
-
-        }, 150);
-
-
-        if (lives <= 0) {
-
-          updateHUD();
-
-          gameOver();
-
-          return;
-        }
+        return;
       }
     }
 
 
     /*
-      Remove objects
-      outside game
+      Remove when outside
     */
 
     if (
@@ -464,7 +511,7 @@ function gameLoop(currentTime) {
       game.clientHeight + 100
     ) {
 
-      element.remove();
+      obj.remove();
     }
 
   });
@@ -472,8 +519,7 @@ function gameLoop(currentTime) {
 
   updateHUD();
 
-
-  animationFrame =
+  lastFrame =
     requestAnimationFrame(gameLoop);
 }
 
@@ -484,92 +530,81 @@ function gameLoop(currentTime) {
 
 function togglePause() {
 
-  if (!gameRunning) {
+  if (!running) {
     return;
   }
 
+  paused = !paused;
 
-  gamePaused =
-    !gamePaused;
+  if (paused) {
 
-
-  if (gamePaused) {
-
-    pauseScreen.classList.remove("hidden");
+    pauseScreen.classList.remove(
+      "hidden"
+    );
 
   } else {
 
-    pauseScreen.classList.add("hidden");
+    pauseScreen.classList.add(
+      "hidden"
+    );
   }
 }
 
 
 /* =========================
-   MOBILE LEFT BUTTON
+   MOBILE CONTROLS
 ========================= */
 
 function holdButton(button, direction) {
 
-  const start = event => {
-
-    event.preventDefault();
-
-    keys[direction] = true;
-  };
-
-
-  const stop = event => {
-
-    event.preventDefault();
-
-    keys[direction] = false;
-  };
-
-
   button.addEventListener(
     "pointerdown",
-    start
-  );
+    function(event) {
 
+      event.preventDefault();
+
+      keys[direction] = true;
+    }
+  );
 
   button.addEventListener(
     "pointerup",
-    stop
-  );
+    function(event) {
 
+      event.preventDefault();
+
+      keys[direction] = false;
+    }
+  );
 
   button.addEventListener(
     "pointercancel",
-    stop
-  );
+    function() {
 
+      keys[direction] = false;
+    }
+  );
 
   button.addEventListener(
     "pointerleave",
-    stop
+    function() {
+
+      keys[direction] = false;
+    }
   );
 }
 
-
-holdButton(
-  leftBtn,
-  "left"
-);
-
-
-holdButton(
-  rightBtn,
-  "right"
-);
+holdButton(leftBtn, "left");
+holdButton(rightBtn, "right");
 
 
 /* =========================
-   BOOST BUTTON
+   BOOST
 ========================= */
 
 boostBtn.addEventListener(
   "pointerdown",
-  event => {
+  function(event) {
 
     event.preventDefault();
 
@@ -577,10 +612,9 @@ boostBtn.addEventListener(
   }
 );
 
-
 boostBtn.addEventListener(
   "pointerup",
-  event => {
+  function(event) {
 
     event.preventDefault();
 
@@ -588,19 +622,17 @@ boostBtn.addEventListener(
   }
 );
 
-
 boostBtn.addEventListener(
   "pointercancel",
-  () => {
+  function() {
 
     boost = false;
   }
 );
 
-
 boostBtn.addEventListener(
   "pointerleave",
-  () => {
+  function() {
 
     boost = false;
   }
@@ -613,11 +645,10 @@ boostBtn.addEventListener(
 
 document.addEventListener(
   "keydown",
-  event => {
+  function(event) {
 
     const key =
       event.key.toLowerCase();
-
 
     if (
       key === "arrowleft" ||
@@ -627,7 +658,6 @@ document.addEventListener(
       keys.left = true;
     }
 
-
     if (
       key === "arrowright" ||
       key === "d"
@@ -636,7 +666,6 @@ document.addEventListener(
       keys.right = true;
     }
 
-
     if (
       event.code === "Space"
     ) {
@@ -644,25 +673,22 @@ document.addEventListener(
       boost = true;
     }
 
-
     if (
       key === "p"
     ) {
 
       togglePause();
     }
-
   }
 );
 
 
 document.addEventListener(
   "keyup",
-  event => {
+  function(event) {
 
     const key =
       event.key.toLowerCase();
-
 
     if (
       key === "arrowleft" ||
@@ -672,7 +698,6 @@ document.addEventListener(
       keys.left = false;
     }
 
-
     if (
       key === "arrowright" ||
       key === "d"
@@ -681,14 +706,12 @@ document.addEventListener(
       keys.right = false;
     }
 
-
     if (
       event.code === "Space"
     ) {
 
       boost = false;
     }
-
   }
 );
 
@@ -697,32 +720,19 @@ document.addEventListener(
    BUTTONS
 ========================= */
 
-startBtn.addEventListener(
-  "click",
-  startGame
-);
+startBtn.onclick =
+  startGame;
+
+restartBtn.onclick =
+  startGame;
+
+pauseBtn.onclick =
+  togglePause;
+
+resumeBtn.onclick =
+  togglePause;
 
 
-restartBtn.addEventListener(
-  "click",
-  startGame
-);
-
-
-pauseBtn.addEventListener(
-  "click",
-  togglePause
-);
-
-
-resumeBtn.addEventListener(
-  "click",
-  togglePause
-);
-
-
-/* =========================
-   INITIAL HUD
-========================= */
+/* INITIAL */
 
 updateHUD();
