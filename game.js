@@ -1,738 +1,370 @@
-const game = document.getElementById("game");
+const gameArea = document.getElementById("gameArea");
 const player = document.getElementById("player");
-const objects = document.getElementById("objects");
+const traffic = document.getElementById("traffic");
 
-const scoreEl = document.getElementById("score");
-const coinsEl = document.getElementById("coins");
-const livesEl = document.getElementById("lives");
-const speedEl = document.getElementById("speed");
+const scoreText = document.getElementById("score");
+const coinsText = document.getElementById("coins");
+const livesText = document.getElementById("lives");
+const speedText = document.getElementById("speed");
 
 const startScreen = document.getElementById("startScreen");
-const pauseScreen = document.getElementById("pauseScreen");
-const gameOverScreen = document.getElementById("gameOverScreen");
+const gameOver = document.getElementById("gameOver");
+const finalScore = document.getElementById("finalScore");
 
 const startBtn = document.getElementById("startBtn");
 const restartBtn = document.getElementById("restartBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const resumeBtn = document.getElementById("resumeBtn");
 
 const leftBtn = document.getElementById("leftBtn");
 const rightBtn = document.getElementById("rightBtn");
 const boostBtn = document.getElementById("boostBtn");
 
 let running = false;
-let paused = false;
-
 let score = 0;
 let coins = 0;
 let lives = 3;
-
-let playerX = 50;
-
-let speed = 3;
+let playerX = 0;
+let gameSpeed = 4;
 let boost = false;
 
-let spawnTimer = 0;
-let lastTime = 0;
+let enemies = [];
+let coinObjects = [];
 
-let invincibleUntil = 0;
-
-const keys = {
+let keys = {
   left: false,
   right: false
 };
 
+function setupPlayer() {
+  playerX = gameArea.clientWidth / 2;
+  player.style.left = playerX + "px";
+}
 
-/* =========================
-   CREATE PLAYER CAR
-========================= */
+function startGame() {
 
-player.innerHTML = `
-  <div class="racing-car">
-    <div class="car-window"></div>
-    <div class="car-light left-light"></div>
-    <div class="car-light right-light"></div>
-    <div class="wheel left-wheel"></div>
-    <div class="wheel right-wheel"></div>
-  </div>
-`;
-
-
-/* =========================
-   RESET
-========================= */
-
-function resetGame() {
+  startScreen.classList.add("hidden");
+  gameOver.classList.add("hidden");
 
   score = 0;
   coins = 0;
   lives = 3;
+  gameSpeed = 4;
 
-  playerX = 50;
+  enemies.forEach(e => e.el.remove());
+  coinObjects.forEach(c => c.el.remove());
 
-  speed = 3;
-  boost = false;
+  enemies = [];
+  coinObjects = [];
 
-  spawnTimer = 25;
-  invincibleUntil = 0;
+  scoreText.textContent = "0";
+  coinsText.textContent = "0";
+  livesText.textContent = "3";
+  speedText.textContent = "1";
 
-  objects.innerHTML = "";
-
-  player.style.left = playerX + "%";
-  player.style.opacity = "1";
-
-  updateHUD();
-}
-
-
-/* =========================
-   HUD
-========================= */
-
-function updateHUD() {
-
-  scoreEl.textContent = Math.floor(score);
-
-  coinsEl.textContent = coins;
-
-  livesEl.textContent = lives;
-
-  speedEl.textContent =
-    Math.max(1, Math.floor(speed / 3));
-}
-
-
-/* =========================
-   START
-========================= */
-
-function startGame() {
-
-  cancelAnimationFrame(lastFrame);
-
-  resetGame();
+  setupPlayer();
 
   running = true;
-  paused = false;
-
-  startScreen.classList.add("hidden");
-  pauseScreen.classList.add("hidden");
-  gameOverScreen.classList.add("hidden");
-
-  lastTime = performance.now();
-
-  lastFrame =
-    requestAnimationFrame(gameLoop);
 }
 
-let lastFrame;
-
-
-/* =========================
-   GAME OVER
-========================= */
-
-function gameOver() {
+function endGame() {
 
   running = false;
 
-  boost = false;
+  finalScore.textContent = score;
 
-  document.getElementById("finalScore").textContent =
-    Math.floor(score);
-
-  document.getElementById("finalCoins").textContent =
-    coins;
-
-  gameOverScreen.classList.remove("hidden");
+  gameOver.classList.remove("hidden");
 }
 
+function createEnemy() {
 
-/* =========================
-   SPAWN TRAFFIC
-========================= */
+  const el = document.createElement("div");
 
-function spawnTraffic() {
+  const colors = ["red", "blue", "yellow", "green"];
+  const color = colors[Math.floor(Math.random() * colors.length)];
 
-  const car = document.createElement("div");
+  el.className = "traffic " + color;
 
-  car.className = "traffic-car";
+  const roadLeft = gameArea.clientWidth * 0.10;
+  const roadRight = gameArea.clientWidth * 0.90;
 
-  const colors = [
-    "red",
-    "blue",
-    "yellow",
-    "green"
-  ];
+  const minX = roadLeft + 15;
+  const maxX = roadRight - 65;
 
-  const color =
-    colors[Math.floor(Math.random() * colors.length)];
+  const x = minX + Math.random() * (maxX - minX);
 
-  car.classList.add(color);
+  el.style.left = x + "px";
+  el.style.top = "-90px";
 
-  car.innerHTML = `
-    <div class="traffic-window"></div>
-    <div class="traffic-wheel left-wheel"></div>
-    <div class="traffic-wheel right-wheel"></div>
-  `;
+  traffic.appendChild(el);
 
-  /*
-    3 lanes
-  */
-
-  const lane =
-    Math.floor(Math.random() * 3);
-
-  const lanePositions = [28, 50, 72];
-
-  const x = lanePositions[lane];
-
-  car.style.left = x + "%";
-  car.style.top = "-90px";
-
-  car.dataset.x = x;
-  car.dataset.y = -90;
-
-  car.dataset.type = "traffic";
-
-  objects.appendChild(car);
+  enemies.push({
+    el: el,
+    x: x,
+    y: -90,
+    hit: false
+  });
 }
 
+function createCoin() {
 
-/* =========================
-   SPAWN COIN
-========================= */
+  const el = document.createElement("div");
 
-function spawnCoin() {
+  el.className = "coin";
+  el.textContent = "★";
 
-  const coin = document.createElement("div");
+  const roadLeft = gameArea.clientWidth * 0.10;
+  const roadRight = gameArea.clientWidth * 0.90;
 
-  coin.className = "game-coin";
+  const x =
+    roadLeft +
+    25 +
+    Math.random() *
+    (roadRight - roadLeft - 75);
 
-  coin.textContent = "★";
+  el.style.left = x + "px";
+  el.style.top = "-40px";
 
-  const lane =
-    Math.floor(Math.random() * 3);
+  traffic.appendChild(el);
 
-  const lanePositions = [28, 50, 72];
-
-  const x = lanePositions[lane];
-
-  coin.style.left = x + "%";
-  coin.style.top = "-50px";
-
-  coin.dataset.x = x;
-  coin.dataset.y = -50;
-
-  coin.dataset.type = "coin";
-
-  objects.appendChild(coin);
+  coinObjects.push({
+    el: el,
+    x: x,
+    y: -40
+  });
 }
 
+function collision(a, b) {
 
-/* =========================
-   REAL COLLISION
-========================= */
-
-function isColliding(obj) {
-
-  const gameWidth = game.clientWidth;
-  const gameHeight = game.clientHeight;
-
-  const playerWidth = 54;
-  const playerHeight = 70;
-
-  const playerLeft =
-    (playerX / 100) * gameWidth -
-    playerWidth / 2;
-
-  const playerTop =
-    gameHeight * 0.86;
-
-  const objectX =
-    (parseFloat(obj.dataset.x) / 100) *
-    gameWidth;
-
-  const objectY =
-    parseFloat(obj.dataset.y);
-
-  const objectWidth = 48;
-  const objectHeight = 62;
-
-  const objectLeft =
-    objectX -
-    objectWidth / 2;
-
-  /*
-    Simple rectangle collision
-  */
-
-  return (
-    playerLeft <
-      objectLeft + objectWidth - 8 &&
-
-    playerLeft + playerWidth >
-      objectLeft + 8 &&
-
-    playerTop <
-      objectY + objectHeight - 8 &&
-
-    playerTop + playerHeight >
-      objectY + 8
+  return !(
+    a.right < b.left ||
+    a.left > b.right ||
+    a.bottom < b.top ||
+    a.top > b.bottom
   );
 }
 
+function checkCollisions(enemy) {
 
-/* =========================
-   PLAYER HIT
-========================= */
+  const p = player.getBoundingClientRect();
+  const e = enemy.el.getBoundingClientRect();
 
-function playerHit() {
+  return collision(p, e);
+}
 
-  const now = performance.now();
+function updateEnemies() {
 
-  /*
-    Prevent instant repeated hits
-  */
+  for (let i = enemies.length - 1; i >= 0; i--) {
 
-  if (now < invincibleUntil) {
-    return;
-  }
+    const enemy = enemies[i];
 
-  lives--;
+    enemy.y += boost ? gameSpeed + 3 : gameSpeed;
 
-  invincibleUntil =
-    now + 1000;
+    enemy.el.style.top = enemy.y + "px";
 
-  /*
-    Blink effect
-  */
+    if (!enemy.hit && checkCollisions(enemy)) {
 
-  player.style.opacity = "0.35";
+      enemy.hit = true;
 
-  setTimeout(() => {
+      lives--;
 
-    if (running) {
-      player.style.opacity = "1";
+      livesText.textContent = lives;
+
+      enemy.el.remove();
+
+      enemies.splice(i, 1);
+
+      if (lives <= 0) {
+        endGame();
+        return;
+      }
+
+      continue;
     }
 
-  }, 180);
+    if (enemy.y > gameArea.clientHeight + 100) {
 
-  setTimeout(() => {
+      enemy.el.remove();
+      enemies.splice(i, 1);
 
-    if (running) {
-      player.style.opacity = "0.35";
+      score += 10;
+      scoreText.textContent = score;
     }
-
-  }, 360);
-
-  setTimeout(() => {
-
-    if (running) {
-      player.style.opacity = "1";
-    }
-
-  }, 540);
-
-  updateHUD();
-
-  if (lives <= 0) {
-
-    gameOver();
   }
 }
 
+function updateCoins() {
 
-/* =========================
-   GAME LOOP
-========================= */
+  for (let i = coinObjects.length - 1; i >= 0; i--) {
 
-function gameLoop(time) {
+    const coin = coinObjects[i];
 
-  if (!running) {
-    return;
+    coin.y += boost ? gameSpeed + 3 : gameSpeed;
+
+    coin.el.style.top = coin.y + "px";
+
+    const p = player.getBoundingClientRect();
+    const c = coin.el.getBoundingClientRect();
+
+    if (collision(p, c)) {
+
+      coins++;
+
+      score += 25;
+
+      coinsText.textContent = coins;
+      scoreText.textContent = score;
+
+      coin.el.remove();
+      coinObjects.splice(i, 1);
+
+      continue;
+    }
+
+    if (coin.y > gameArea.clientHeight + 50) {
+
+      coin.el.remove();
+      coinObjects.splice(i, 1);
+    }
   }
+}
 
-  if (paused) {
+function movePlayer() {
 
-    lastTime = time;
-
-    lastFrame =
-      requestAnimationFrame(gameLoop);
-
-    return;
-  }
-
-  let delta =
-    (time - lastTime) / 16.67;
-
-  delta =
-    Math.min(delta, 2);
-
-  lastTime = time;
-
-
-  /* SCORE */
-
-  score +=
-    0.10 *
-    delta *
-    (boost ? 1.5 : 1);
-
-
-  /* SPEED */
-
-  speed +=
-    0.001 *
-    delta;
-
-  speed =
-    Math.min(speed, 7);
-
-
-  const currentSpeed =
-    boost
-      ? speed * 1.6
-      : speed;
-
-
-  /* PLAYER */
+  const roadLeft = gameArea.clientWidth * 0.10 + 8;
+  const roadRight = gameArea.clientWidth * 0.90 - 65;
 
   if (keys.left) {
-
-    playerX -=
-      1.0 *
-      delta;
+    playerX -= 6;
   }
 
   if (keys.right) {
-
-    playerX +=
-      1.0 *
-      delta;
+    playerX += 6;
   }
 
-
-  /*
-    Keep car inside road
-  */
-
-  playerX =
-    Math.max(
-      19,
-      Math.min(81, playerX)
-    );
-
-  player.style.left =
-    playerX + "%";
-
-
-  /* SPAWN */
-
-  spawnTimer -= delta;
-
-  if (spawnTimer <= 0) {
-
-    /*
-      Traffic is more common
-    */
-
-    if (Math.random() < 0.82) {
-
-      spawnTraffic();
-
-    } else {
-
-      spawnCoin();
-    }
-
-    spawnTimer =
-      Math.max(
-        32,
-        55 - speed * 3
-      );
+  if (playerX < roadLeft) {
+    playerX = roadLeft;
   }
 
+  if (playerX > roadRight) {
+    playerX = roadRight;
+  }
 
-  /* MOVE OBJECTS */
-
-  [...objects.children].forEach(obj => {
-
-    let y =
-      parseFloat(obj.dataset.y);
-
-    y +=
-      currentSpeed *
-      delta;
-
-    obj.dataset.y = y;
-
-    obj.style.top =
-      y + "px";
-
-
-    /* COLLISION */
-
-    if (isColliding(obj)) {
-
-      if (
-        obj.dataset.type === "coin"
-      ) {
-
-        coins++;
-
-        score += 10;
-
-        obj.remove();
-
-        return;
-      }
-
-
-      if (
-        obj.dataset.type === "traffic"
-      ) {
-
-        playerHit();
-
-        obj.remove();
-
-        return;
-      }
-    }
-
-
-    /*
-      Remove when outside
-    */
-
-    if (
-      y >
-      game.clientHeight + 100
-    ) {
-
-      obj.remove();
-    }
-
-  });
-
-
-  updateHUD();
-
-  lastFrame =
-    requestAnimationFrame(gameLoop);
+  player.style.left = playerX + "px";
 }
 
+function gameLoop() {
 
-/* =========================
-   PAUSE
-========================= */
+  if (!running) return;
 
-function togglePause() {
+  movePlayer();
+  updateEnemies();
+  updateCoins();
 
-  if (!running) {
-    return;
+  if (Math.random() < 0.018) {
+    createEnemy();
   }
 
-  paused = !paused;
-
-  if (paused) {
-
-    pauseScreen.classList.remove(
-      "hidden"
-    );
-
-  } else {
-
-    pauseScreen.classList.add(
-      "hidden"
-    );
+  if (Math.random() < 0.008) {
+    createCoin();
   }
+
+  score++;
+
+  scoreText.textContent = score;
+
+  gameSpeed = Math.min(8, 4 + Math.floor(score / 1000));
+
+  speedText.textContent = gameSpeed - 3;
+
+  requestAnimationFrame(gameLoop);
 }
-
-
-/* =========================
-   MOBILE CONTROLS
-========================= */
 
 function holdButton(button, direction) {
 
-  button.addEventListener(
-    "pointerdown",
-    function(event) {
+  button.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    keys[direction] = true;
+  });
 
-      event.preventDefault();
+  button.addEventListener("pointerup", e => {
+    e.preventDefault();
+    keys[direction] = false;
+  });
 
-      keys[direction] = true;
-    }
-  );
+  button.addEventListener("pointercancel", () => {
+    keys[direction] = false;
+  });
 
-  button.addEventListener(
-    "pointerup",
-    function(event) {
-
-      event.preventDefault();
-
-      keys[direction] = false;
-    }
-  );
-
-  button.addEventListener(
-    "pointercancel",
-    function() {
-
-      keys[direction] = false;
-    }
-  );
-
-  button.addEventListener(
-    "pointerleave",
-    function() {
-
-      keys[direction] = false;
-    }
-  );
+  button.addEventListener("pointerleave", () => {
+    keys[direction] = false;
+  });
 }
 
 holdButton(leftBtn, "left");
 holdButton(rightBtn, "right");
 
+boostBtn.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  boost = true;
+});
 
-/* =========================
-   BOOST
-========================= */
+boostBtn.addEventListener("pointerup", e => {
+  e.preventDefault();
+  boost = false;
+});
 
-boostBtn.addEventListener(
-  "pointerdown",
-  function(event) {
+boostBtn.addEventListener("pointerleave", () => {
+  boost = false;
+});
 
-    event.preventDefault();
+document.addEventListener("keydown", e => {
 
+  if (e.key === "ArrowLeft") {
+    keys.left = true;
+  }
+
+  if (e.key === "ArrowRight") {
+    keys.right = true;
+  }
+
+  if (e.key === " ") {
     boost = true;
   }
-);
+});
 
-boostBtn.addEventListener(
-  "pointerup",
-  function(event) {
+document.addEventListener("keyup", e => {
 
-    event.preventDefault();
+  if (e.key === "ArrowLeft") {
+    keys.left = false;
+  }
 
+  if (e.key === "ArrowRight") {
+    keys.right = false;
+  }
+
+  if (e.key === " ") {
     boost = false;
   }
-);
+});
 
-boostBtn.addEventListener(
-  "pointercancel",
-  function() {
+startBtn.addEventListener("click", () => {
 
-    boost = false;
+  startGame();
+
+  requestAnimationFrame(gameLoop);
+});
+
+restartBtn.addEventListener("click", () => {
+
+  startGame();
+
+  requestAnimationFrame(gameLoop);
+});
+
+window.addEventListener("resize", () => {
+
+  if (!running) {
+    setupPlayer();
   }
-);
+});
 
-boostBtn.addEventListener(
-  "pointerleave",
-  function() {
-
-    boost = false;
-  }
-);
-
-
-/* =========================
-   KEYBOARD
-========================= */
-
-document.addEventListener(
-  "keydown",
-  function(event) {
-
-    const key =
-      event.key.toLowerCase();
-
-    if (
-      key === "arrowleft" ||
-      key === "a"
-    ) {
-
-      keys.left = true;
-    }
-
-    if (
-      key === "arrowright" ||
-      key === "d"
-    ) {
-
-      keys.right = true;
-    }
-
-    if (
-      event.code === "Space"
-    ) {
-
-      boost = true;
-    }
-
-    if (
-      key === "p"
-    ) {
-
-      togglePause();
-    }
-  }
-);
-
-
-document.addEventListener(
-  "keyup",
-  function(event) {
-
-    const key =
-      event.key.toLowerCase();
-
-    if (
-      key === "arrowleft" ||
-      key === "a"
-    ) {
-
-      keys.left = false;
-    }
-
-    if (
-      key === "arrowright" ||
-      key === "d"
-    ) {
-
-      keys.right = false;
-    }
-
-    if (
-      event.code === "Space"
-    ) {
-
-      boost = false;
-    }
-  }
-);
-
-
-/* =========================
-   BUTTONS
-========================= */
-
-startBtn.onclick =
-  startGame;
-
-restartBtn.onclick =
-  startGame;
-
-pauseBtn.onclick =
-  togglePause;
-
-resumeBtn.onclick =
-  togglePause;
-
-
-/* INITIAL */
-
-updateHUD();
+setupPlayer();
